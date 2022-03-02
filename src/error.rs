@@ -7,5 +7,5 @@ pub enum PortAdaptorError {
     #[msg("CollateralIndexOutOfBound")]
     CollateralIndexOutOfBound,
     #[msg("BorrowIndexOutOfBound")]
-    BorrowIndexOutOfBound
+    BorrowIndexOutOfBound,
 }

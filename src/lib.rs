@@ -3,13 +3,14 @@ pub mod error;
 use std::io::Write;
 use std::ops::Deref;
 
+use crate::error::PortAdaptorError;
+use anchor_lang::context::CpiContext;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::Slot;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::solana_program::program::{invoke, invoke_signed};
 use anchor_lang::solana_program::program_option::COption;
 use anchor_lang::solana_program::program_pack::Pack;
-use anchor_lang::context::CpiContext;
 use port_staking_instructions::instruction::{
     claim_reward as port_claim_reward, create_stake_account as create_port_stake_account,
     deposit as port_staking_deposit, init_staking_pool as init_port_staking_pool,
@@ -17,10 +18,15 @@ use port_staking_instructions::instruction::{
 };
 use port_staking_instructions::state::{StakeAccount, StakingPool};
 use port_variable_rate_lending_instructions::id as port_lending_id;
-use port_variable_rate_lending_instructions::instruction::{borrow_obligation_liquidity, deposit_reserve_liquidity_and_obligation_collateral, redeem_reserve_collateral, refresh_obligation, refresh_reserve, repay_obligation_liquidity, withdraw_obligation_collateral, LendingInstruction, deposit_reserve_liquidity};
-use port_variable_rate_lending_instructions::state::{CollateralExchangeRate, LendingMarket, Obligation, Reserve};
-use crate::error::PortAdaptorError;
-
+use port_variable_rate_lending_instructions::instruction::{
+    borrow_obligation_liquidity, deposit_reserve_liquidity,
+    deposit_reserve_liquidity_and_obligation_collateral, redeem_reserve_collateral,
+    refresh_obligation, refresh_reserve, repay_obligation_liquidity,
+    withdraw_obligation_collateral, LendingInstruction,
+};
+use port_variable_rate_lending_instructions::state::{
+    CollateralExchangeRate, LendingMarket, Obligation, Reserve,
+};
 
 pub fn init_obligation<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, InitObligation<'info>>,
@@ -850,13 +856,16 @@ impl Deref for PortReserve {
     }
 }
 
-
 #[derive(Clone)]
 pub struct PortObligation(Obligation);
 
 impl PortObligation {
     pub const LEN: usize = Obligation::LEN;
-    pub fn calculate_liquidity(&self, reserve_pubkey: &Pubkey, exchange_rate: CollateralExchangeRate) -> Result<u64, ProgramError> {
+    pub fn calculate_liquidity(
+        &self,
+        reserve_pubkey: &Pubkey,
+        exchange_rate: CollateralExchangeRate,
+    ) -> Result<u64, ProgramError> {
         let borrow = self
             .borrows
             .iter()
@@ -877,9 +886,13 @@ impl PortObligation {
                 } else {
                     None
                 }
-            }).unwrap_or(0);
+            })
+            .unwrap_or(0);
 
-        exchange_rate.collateral_to_liquidity(deposit)?.checked_sub(borrow.try_ceil_u64()?).ok_or(PortAdaptorError::Insolvency.into())
+        exchange_rate
+            .collateral_to_liquidity(deposit)?
+            .checked_sub(borrow.try_ceil_u64()?)
+            .ok_or(PortAdaptorError::Insolvency.into())
     }
 }
 
@@ -913,8 +926,6 @@ impl Deref for PortObligation {
         &self.0
     }
 }
-
-
 
 #[derive(Clone)]
 pub struct PortStakingPool(StakingPool);
@@ -954,7 +965,6 @@ impl Deref for PortStakingPool {
     }
 }
 
-
 #[derive(Clone)]
 pub struct PortLendingMarket(LendingMarket);
 
@@ -992,4 +1002,3 @@ impl Deref for PortLendingMarket {
         &self.0
     }
 }
-
