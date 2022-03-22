@@ -27,8 +27,8 @@ use port_variable_rate_lending_instructions::state::{
     CollateralExchangeRate, LendingMarket, Obligation, Reserve,
 };
 
-pub use port_variable_rate_lending_instructions::id as port_lending_id;
 pub use port_staking_instructions::id as port_staking_id;
+pub use port_variable_rate_lending_instructions::id as port_lending_id;
 
 pub fn init_obligation<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, InitObligation<'info>>,
