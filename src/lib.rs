@@ -17,7 +17,6 @@ use port_staking_instructions::instruction::{
     withdraw as port_staking_withdraw,
 };
 use port_staking_instructions::state::{StakeAccount, StakingPool};
-use port_variable_rate_lending_instructions::id as port_lending_id;
 use port_variable_rate_lending_instructions::instruction::{
     borrow_obligation_liquidity, deposit_reserve_liquidity,
     deposit_reserve_liquidity_and_obligation_collateral, redeem_reserve_collateral,
@@ -27,6 +26,9 @@ use port_variable_rate_lending_instructions::instruction::{
 use port_variable_rate_lending_instructions::state::{
     CollateralExchangeRate, LendingMarket, Obligation, Reserve,
 };
+
+pub use port_staking_instructions::id as port_staking_id;
+pub use port_variable_rate_lending_instructions::id as port_lending_id;
 
 pub fn init_obligation<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, InitObligation<'info>>,
@@ -75,7 +77,7 @@ pub fn deposit_reserve<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = deposit_reserve_liquidity(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_liquidity.key(),
         ctx.accounts.destination_collateral.key(),
@@ -125,7 +127,7 @@ pub fn deposit_and_collateralize<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = deposit_reserve_liquidity_and_obligation_collateral(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_liquidity.key(),
         ctx.accounts.user_collateral.key(),
@@ -192,7 +194,7 @@ pub fn borrow<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = borrow_obligation_liquidity(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_liquidity.key(),
         ctx.accounts.destination_liquidity.key(),
@@ -242,7 +244,7 @@ pub fn repay<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = repay_obligation_liquidity(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_liquidity.key(),
         ctx.accounts.destination_liquidity.key(),
@@ -287,7 +289,7 @@ pub fn withdraw<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = withdraw_obligation_collateral(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_collateral.key(),
         ctx.accounts.destination_collateral.key(),
@@ -342,7 +344,7 @@ pub fn redeem<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = redeem_reserve_collateral(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         amount,
         ctx.accounts.source_collateral.key(),
         ctx.accounts.destination_liquidity.key(),
@@ -392,7 +394,7 @@ pub fn refresh_port_reserve<'a, 'b, 'c, 'info>(
 ) -> Result<()> {
     let oracle = ctx.remaining_accounts;
     let ix = refresh_reserve(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         ctx.accounts.reserve.key(),
         oracle
             .first()
@@ -414,7 +416,7 @@ pub fn refresh_port_obligation<'a, 'b, 'c, 'info>(
 ) -> Result<()> {
     let reserves = ctx.remaining_accounts;
     let ix = refresh_obligation(
-        port_variable_rate_lending_instructions::id(),
+        port_lending_id(),
         ctx.accounts.obligation.key(),
         reserves.iter().map(|info| info.key()).collect(),
     );
@@ -434,7 +436,7 @@ pub fn claim_reward<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, ClaimReward<'info>>,
 ) -> Result<()> {
     let ix = port_claim_reward(
-        port_staking_instructions::id(),
+        port_staking_id(),
         ctx.accounts.stake_account_owner.key(),
         ctx.accounts.stake_account.key(),
         ctx.accounts.staking_pool.key(),
@@ -479,7 +481,7 @@ pub fn create_port_staking_pool<'a, 'b, 'c, 'info>(
     earliest_reward_claim_time: Slot,
 ) -> Result<()> {
     let ix = init_port_staking_pool(
-        port_staking_instructions::id(),
+        port_staking_id(),
         supply,
         duration,
         earliest_reward_claim_time,
@@ -528,7 +530,7 @@ pub fn create_stake_account<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, CreateStakeAccount<'info>>,
 ) -> Result<()> {
     let ix = create_port_stake_account(
-        port_staking_instructions::id(),
+        port_staking_id(),
         ctx.accounts.stake_account.key(),
         ctx.accounts.staking_pool.key(),
         ctx.accounts.owner.key(),
@@ -560,7 +562,7 @@ pub fn port_stake<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = port_staking_deposit(
-        port_staking_instructions::id(),
+        port_staking_id(),
         amount,
         ctx.accounts.authority.key(),
         ctx.accounts.stake_account.key(),
@@ -593,7 +595,7 @@ pub fn port_unstake<'a, 'b, 'c, 'info>(
     amount: u64,
 ) -> Result<()> {
     let ix = port_staking_withdraw(
-        port_staking_instructions::id(),
+        port_staking_id(),
         amount,
         ctx.accounts.authority.key(),
         ctx.accounts.stake_account.key(),
@@ -833,7 +835,7 @@ impl anchor_lang::AccountSerialize for PortStakeAccount {
 
 impl anchor_lang::Owner for PortStakeAccount {
     fn owner() -> Pubkey {
-        port_staking_instructions::id()
+        port_staking_id()
     }
 }
 
@@ -867,7 +869,7 @@ impl anchor_lang::AccountSerialize for PortReserve {
 
 impl anchor_lang::Owner for PortReserve {
     fn owner() -> Pubkey {
-        port_variable_rate_lending_instructions::id()
+        port_lending_id()
     }
 }
 
@@ -940,7 +942,7 @@ impl anchor_lang::AccountSerialize for PortObligation {
 
 impl anchor_lang::Owner for PortObligation {
     fn owner() -> Pubkey {
-        port_variable_rate_lending_instructions::id()
+        port_lending_id()
     }
 }
 
@@ -980,7 +982,7 @@ impl anchor_lang::AccountSerialize for PortStakingPool {
 
 impl anchor_lang::Owner for PortStakingPool {
     fn owner() -> Pubkey {
-        port_staking_instructions::id()
+        port_staking_id()
     }
 }
 
@@ -1020,7 +1022,7 @@ impl anchor_lang::AccountSerialize for PortLendingMarket {
 
 impl anchor_lang::Owner for PortLendingMarket {
     fn owner() -> Pubkey {
-        port_variable_rate_lending_instructions::id()
+        port_lending_id()
     }
 }
 
