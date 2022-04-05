@@ -1,7 +1,7 @@
 [package]
 name = "port-anchor-adaptor"
 description = "Adaptors to call into Port variable rate lending program."
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://port.finance"
@@ -9,11 +9,14 @@ repository = "https://github.com/port-finance/sundial"
 authors = ["Port Finance Team <hello@port.finance>"]
 keywords = ["solana", "anchor", "defi", "port"]
 
+[features]
+devnet = []
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 port-variable-rate-lending-instructions = "0.2.9"
 port-staking-instructions = "0.2.0"
-anchor-lang = "0.23.0"
+anchor-lang = "0.18.2"
 solana-maths = "0.1.0"
 num-derive = "0.3.3"
 num-traits = "0.2.14"

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[error_code]
+#[error]
 pub enum PortAdaptorError {
     #[msg("Only has borrows, no collaterals")]
     Insolvency,

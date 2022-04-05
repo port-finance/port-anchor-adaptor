@@ -2,13 +2,14 @@ pub mod error;
 
 use std::io::Write;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use crate::error::PortAdaptorError;
-use anchor_lang::context::CpiContext;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock::Slot;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::solana_program::program::{invoke, invoke_signed};
+use anchor_lang::solana_program::program_error::ProgramError as Error;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_lang::solana_program::program_pack::Pack;
 use port_staking_instructions::instruction::{
@@ -28,11 +29,21 @@ use port_variable_rate_lending_instructions::state::{
 };
 
 pub use port_staking_instructions::id as port_staking_id;
-pub use port_variable_rate_lending_instructions::id as port_lending_id;
+pub use port_variable_rate_lending_instructions::id;
+
+#[cfg(feature = "devnet")]
+pub fn port_lending_id() -> Pubkey {
+    Pubkey::from_str("pdQ2rQQU5zH2rDgZ7xH2azMBJegUzUyunJ5Jd637hC4").unwrap()
+}
+
+#[cfg(not(feature = "devnet"))]
+pub fn port_lending_id() -> Pubkey {
+    id()
+}
 
 pub fn init_obligation<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, InitObligation<'info>>,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = Instruction {
         program_id: port_lending_id(),
         accounts: vec![
@@ -75,7 +86,7 @@ pub struct InitObligation<'info> {
 pub fn deposit_reserve<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, Deposit<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = deposit_reserve_liquidity(
         port_lending_id(),
         amount,
@@ -125,7 +136,7 @@ pub struct Deposit<'info> {
 pub fn deposit_and_collateralize<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, DepositAndCollateralize<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = deposit_reserve_liquidity_and_obligation_collateral(
         port_lending_id(),
         amount,
@@ -192,7 +203,7 @@ pub struct DepositAndCollateralize<'info> {
 pub fn borrow<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, Borrow<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = borrow_obligation_liquidity(
         port_lending_id(),
         amount,
@@ -242,7 +253,7 @@ pub struct Borrow<'info> {
 pub fn repay<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, Repay<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = repay_obligation_liquidity(
         port_lending_id(),
         amount,
@@ -287,7 +298,7 @@ pub struct Repay<'info> {
 pub fn withdraw<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, Withdraw<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = withdraw_obligation_collateral(
         port_lending_id(),
         amount,
@@ -342,7 +353,7 @@ pub struct Withdraw<'info> {
 pub fn redeem<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, Redeem<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = redeem_reserve_collateral(
         port_lending_id(),
         amount,
@@ -391,7 +402,7 @@ pub struct Redeem<'info> {
 
 pub fn refresh_port_reserve<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, RefreshReserve<'info>>,
-) -> Result<()> {
+) -> ProgramResult {
     let oracle = ctx.remaining_accounts;
     let ix = refresh_reserve(
         port_lending_id(),
@@ -413,7 +424,7 @@ pub struct RefreshReserve<'info> {
 
 pub fn refresh_port_obligation<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, RefreshObligation<'info>>,
-) -> Result<()> {
+) -> ProgramResult {
     let reserves = ctx.remaining_accounts;
     let ix = refresh_obligation(
         port_lending_id(),
@@ -434,7 +445,7 @@ pub struct RefreshObligation<'info> {
 
 pub fn claim_reward<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, ClaimReward<'info>>,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = port_claim_reward(
         port_staking_id(),
         ctx.accounts.stake_account_owner.key(),
@@ -479,7 +490,7 @@ pub fn create_port_staking_pool<'a, 'b, 'c, 'info>(
     supply: u64,
     duration: u64,
     earliest_reward_claim_time: Slot,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = init_port_staking_pool(
         port_staking_id(),
         supply,
@@ -528,7 +539,7 @@ pub struct CreateStakingPoolContext<'info> {
 
 pub fn create_stake_account<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, CreateStakeAccount<'info>>,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = create_port_stake_account(
         port_staking_id(),
         ctx.accounts.stake_account.key(),
@@ -560,7 +571,7 @@ pub struct CreateStakeAccount<'info> {
 pub fn port_stake<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, PortStake<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = port_staking_deposit(
         port_staking_id(),
         amount,
@@ -593,7 +604,7 @@ pub struct PortStake<'info> {
 pub fn port_unstake<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, PortUnstake<'info>>,
     amount: u64,
-) -> Result<()> {
+) -> ProgramResult {
     let ix = port_staking_withdraw(
         port_staking_id(),
         amount,
@@ -626,6 +637,7 @@ pub struct PortUnstake<'info> {
 pub mod port_accessor {
     use std::convert::TryFrom;
 
+    use anchor_lang::solana_program::program_error::ProgramError as Error;
     use anchor_lang::solana_program::pubkey::PUBKEY_BYTES;
     use port_variable_rate_lending_instructions::math::{Rate as PortRate, U128};
     use port_variable_rate_lending_instructions::state::{
@@ -634,6 +646,8 @@ pub mod port_accessor {
     };
 
     use solana_maths::{Decimal, Rate, TryAdd, TryDiv, TrySub};
+
+    use crate::error::PortAdaptorError;
 
     use super::*;
 
@@ -748,7 +762,7 @@ pub mod port_accessor {
         let borrows_lens = obligation_borrows_count(account)?;
         if n >= borrows_lens {
             msg!("No enough borrows");
-            return Err(error!(PortAdaptorError::BorrowIndexOutOfBound));
+            return Err(PortAdaptorError::BorrowIndexOutOfBound.into());
         }
         let mut amount_bytes = [0u8; 16];
         let start_index = 140
@@ -769,7 +783,7 @@ pub mod port_accessor {
         let deposit_lens = obligation_deposits_count(account)?;
         if n >= deposit_lens {
             msg!("No enough deposits");
-            return Err(error!(PortAdaptorError::CollateralIndexOutOfBound));
+            return Err(PortAdaptorError::CollateralIndexOutOfBound.into());
         }
         let mut amount_bytes = [0u8; 8];
         let start_index = 140 + n as usize * OBLIGATION_COLLATERAL_LEN + PUBKEY_BYTES;
@@ -917,7 +931,7 @@ impl PortObligation {
         exchange_rate
             .collateral_to_liquidity(deposit)?
             .checked_sub(borrow.try_ceil_u64()?)
-            .ok_or(error!(PortAdaptorError::Insolvency))
+            .ok_or(PortAdaptorError::Insolvency.into())
     }
 }
 
