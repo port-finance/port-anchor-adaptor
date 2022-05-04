@@ -13,7 +13,7 @@ keywords = ["solana", "anchor", "defi", "port"]
 [dependencies]
 port-variable-rate-lending-instructions = "0.2.9"
 port-staking-instructions = "0.2.0"
-anchor-lang = "0.23.0"
+anchor-lang = "0.24.2"
 solana-maths = "0.1.0"
 num-derive = "0.3.3"
 num-traits = "0.2.14"
