@@ -445,6 +445,8 @@ pub struct RefreshObligation<'info> {
 
 pub fn claim_reward<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, ClaimReward<'info>>,
+    sub_reward_pool: AccountInfo<'info>,
+    sub_reward_dest: AccountInfo<'info>,
 ) -> ProgramResult {
     let ix = port_claim_reward(
         port_staking_id(),
@@ -453,6 +455,8 @@ pub fn claim_reward<'a, 'b, 'c, 'info>(
         ctx.accounts.staking_pool.key(),
         ctx.accounts.reward_token_pool.key(),
         ctx.accounts.reward_dest.key(),
+        sub_reward_pool.key(),
+        sub_reward_dest.key(),
     );
 
     invoke_signed(
@@ -466,6 +470,8 @@ pub fn claim_reward<'a, 'b, 'c, 'info>(
             ctx.accounts.staking_program_authority,
             ctx.accounts.clock,
             ctx.accounts.token_program,
+            sub_reward_pool,
+            sub_reward_dest,
             ctx.program,
         ],
         ctx.signer_seeds,
