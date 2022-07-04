@@ -445,8 +445,8 @@ pub struct RefreshObligation<'info> {
 
 pub fn claim_reward<'a, 'b, 'c, 'info>(
     ctx: CpiContext<'a, 'b, 'c, 'info, ClaimReward<'info>>,
-    sub_reward_pool: AccountInfo<'info>,
-    sub_reward_dest: AccountInfo<'info>,
+    sub_reward_pool: Option<AccountInfo<'info>>,
+    sub_reward_dest: Option<AccountInfo<'info>>,
 ) -> ProgramResult {
     let ix = port_claim_reward(
         port_staking_id(),
@@ -455,25 +455,31 @@ pub fn claim_reward<'a, 'b, 'c, 'info>(
         ctx.accounts.staking_pool.key(),
         ctx.accounts.reward_token_pool.key(),
         ctx.accounts.reward_dest.key(),
-        Some(sub_reward_pool.key()),
-        Some(sub_reward_dest.key()),
+        sub_reward_pool.as_ref().map_or(None, |v| Some(v.key())),
+        sub_reward_dest.as_ref().map_or(None, |v| Some(v.key())),
     );
+
+    let accounts : Vec<AccountInfo<'info>> = vec![
+        ctx.accounts.stake_account_owner,
+        ctx.accounts.stake_account,
+        ctx.accounts.staking_pool,
+        ctx.accounts.reward_token_pool,
+        ctx.accounts.reward_dest,
+        ctx.accounts.staking_program_authority,
+        ctx.accounts.clock,
+        ctx.accounts.token_program,
+    ]
+    .into_iter()
+    .chain(match [sub_reward_pool, sub_reward_dest] {
+        [Some(pool), Some(reward)] => vec![pool, reward],
+        _ => vec![],
+    })
+    .chain([ctx.program])
+    .collect();
 
     invoke_signed(
         &ix,
-        &[
-            ctx.accounts.stake_account_owner,
-            ctx.accounts.stake_account,
-            ctx.accounts.staking_pool,
-            ctx.accounts.reward_token_pool,
-            ctx.accounts.reward_dest,
-            ctx.accounts.staking_program_authority,
-            ctx.accounts.clock,
-            ctx.accounts.token_program,
-            sub_reward_pool,
-            sub_reward_dest,
-            ctx.program,
-        ],
+        &accounts[..],
         ctx.signer_seeds,
     )
     .map_err(Into::into)
