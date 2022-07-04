@@ -15,7 +15,7 @@ devnet = []
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 port-variable-rate-lending-instructions = "0.2.9"
-port-staking-instructions = {git = "https://github.com/castle-finance/port-staking-instructions.git"}
+port-staking-instructions = {git = "https://github.com/castle-finance/port-staking-instructions.git", branch = "optional_sub_reward"}
 anchor-lang = "0.18.2"
 solana-maths = "0.1.0"
 num-derive = "0.3.3"
