@@ -455,8 +455,8 @@ pub fn claim_reward<'a, 'b, 'c, 'info>(
         ctx.accounts.staking_pool.key(),
         ctx.accounts.reward_token_pool.key(),
         ctx.accounts.reward_dest.key(),
-        sub_reward_pool.key(),
-        sub_reward_dest.key(),
+        Some(sub_reward_pool.key()),
+        Some(sub_reward_dest.key()),
     );
 
     invoke_signed(
